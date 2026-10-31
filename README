@@ -1,0 +1,300 @@
+# CompactoLab — Copie de déploiement GitHub / Streamlit Community Cloud
+
+Version 1.0 — 31 octobre 2026
+
+Cette archive contient exactement app.py, requirements.txt et README.
+Dans cette copie, le manifeste porte le nom standard détecté par Community Cloud.
+Le dossier source d’origine conserve requirement.text et reste inchangé.
+
+Installation locale de CETTE copie :
+
+    python -m pip install -r requirements.txt
+    python -m streamlit run app.py
+
+Créer un dépôt GitHub vide, puis téléverser les trois fichiers ensemble à la
+racine du dépôt. Vérifier la branche réelle, généralement main, et app.py.
+On peut aussi utiliser le terminal VS Code dans le dossier de cette copie :
+
+    git init
+    git add app.py requirements.txt README
+    git commit -m "Premiere version de CompactoLab"
+    git branch -M main
+
+Relier ensuite origin à l’URL du dépôt effectivement créé, vérifier git remote -v
+et envoyer avec git push -u origin main. Aucune URL fictive n’est préconfigurée.
+Ne pas réutiliser le dossier Git d’une autre application.
+
+Dans Streamlit Community Cloud : New app, choisir dépôt, branche et app.py.
+Pour Paste URL, utiliser l’URL GitHub du fichier : .../blob/main/app.py.
+Le lien public final se termine par .streamlit.app ; localhost reste local.
+
+Pour mettre à jour : tester, copier les modifications dans ce dossier, puis :
+
+    git status
+    git add app.py requirements.txt README
+    git commit -m "Mise a jour de CompactoLab"
+    git push
+
+Cette préparation ne crée aucun dépôt et ne publie aucune application.
+Les données sont en session ; sauvegarder le JSON avant fermeture.
+Environnement testé : Python 3.14, Streamlit 1.65.
+
+## 3. Parcours de l’application
+
+Tableau de bord : chargement explicite de l’exemple ou accès à la saisie.
+Après chargement : effectif, moyenne du compactage relatif, fréquence sous
+l’objectif, dispersion, plan local et cartes des zones cliquables.
+Le dessin des couches est un schéma pédagogique sans échelle, pas une coupe mesurée.
+Les points X/Y sont dans un repère local saisi ; pas de GPS, d’interpolation
+entre points ou de calcul d’une superficie insuffisamment compactée.
+Les axes du plan ont une même étendue numérique, mais l’affichage est responsive :
+ne pas mesurer une distance à la règle sur la figure.
+
+Essais et saisie : saisie unitaire, import CSV/XLSX, édition/suppression de
+lignes, journal de nettoyage et calcul détaillé à partir de masse/volume/eau.
+Un import remplace le carnet après confirmation ; la saisie unitaire ajoute
+une ligne et élargit les filtres afin de la rendre visible.
+
+Comparer les zones : tableau d’indicateurs, boîtes de dispersion, nuage
+eau/masse volumique et comparaison de deux zones avec différence des moyennes.
+Il faut deux zones dans la sélection pour le face-à-face.
+Le nuage de points de terrain n’est pas une courbe Proctor : aucun optimum
+en eau ni maximum de laboratoire ne sont ajustés automatiquement.
+
+Probabilités : fréquence observée dans la sélection. En complément, choisir
+un sous-ensemble de même sol, référence, masse volumique de référence et couche,
+puis activer explicitement les hypothèses de comparabilité, indépendance et
+représentativité. Affichage de Wilson, modèle normal et bootstrap optionnel.
+Sans identifiants de sol, de référence ou de couche, aucun modèle n’est activé.
+Une même dénomination ne prouve pas les hypothèses : elles restent à vérifier.
+
+Rapports et méthodes : titre/étudiant/conclusion modifiables, PDF, Excel,
+CSV et sauvegarde/restauration JSON. Test guidé, formules et sources.
+Une estimation probabiliste ne figure dans le PDF que si elle a été étudiée
+dans le même contexte puis explicitement cochée. Son sous-ensemble et ses
+hypothèses sont indiqués. Les textes sont conservés pendant la navigation
+dans une même session, sans garantie après fermeture.
+
+Filtres communs dans la barre latérale : objectif, couches, zones et retrait
+optionnel des doublons. Une liste vide signifie toutes les zones/couches.
+Les cartes des zones se fondent sur les couches sélectionnées, avant filtre
+de zone, pour pouvoir passer d’une zone à l’autre.
+
+## 4. Colonnes et unités
+
+    id;zone;date;couche;sol;reference;rho_d;rho_h;eau_pct;rho_ref;x_m;y_m;note
+
+- id : identifiant d’essai. Si absent, L-0001, etc., désigne la ligne source.
+- zone : texte obligatoire.
+- date : facultative, format AAAA-MM-JJ. XLSX accepte les dates Excel usuelles.
+- couche : identification de la couche, nécessaire pour les estimations.
+- sol : identification du sol, nécessaire pour les estimations.
+- reference : identifiant d’une référence de laboratoire et de son protocole.
+- rho_d : masse volumique sèche mesurée, en kg/m³.
+- rho_h : masse volumique humide mesurée, en kg/m³.
+- eau_pct : teneur en eau en %, rapportée à la masse de sol sec.
+- rho_ref : masse volumique sèche de référence issue du laboratoire, kg/m³.
+- x_m, y_m : coordonnées locales facultatives en mètres ; deux valeurs
+  sont nécessaires pour représenter un point. Les coordonnées négatives sont permises.
+- note : observation libre facultative.
+
+Choisir rho_d OU rho_h, jamais les deux dans une même ligne. Avec rho_h,
+eau_pct doit être renseignée, y compris si elle vaut zéro. rho_ref est requise.
+Avec rho_d, la teneur en eau est facultative et informative.
+Une absence d’eau n’est pas assimilée à 0 %. Une valeur sèche n’est pas recalculée
+automatiquement à partir d’un autre champ concurrent.
+
+Tous les dosages de masse volumique sont en kg/m³ : 1,8 t/m³ = 1 800 kg/m³.
+Ne pas saisir une masse volumique en t/m³ dans une colonne libellée kg/m³.
+Une masse volumique est une masse par volume ; elle n’est pas un poids volumique
+en kN/m³. Les rapports de poids volumiques et de masses volumiques sont égaux
+lorsque les unités et les conditions sont cohérentes ; aucune conversion
+implicite de kN/m³ n’est effectuée.
+
+## 5. Importer, nettoyer et conserver
+
+CSV UTF-8 avec virgule, point-virgule ou tabulation comme séparateur.
+Virgule décimale acceptée avec un CSV au point-virgule. Ne pas mettre d’unité
+dans les cellules numériques. Certains libellés français sont reconnus ;
+le modèle CSV canonique permet d’éviter toute ambiguïté.
+XLSX : première feuille seulement. Ancien XLS non accepté : convertir.
+
+Limites : import 5 Mo ; 10 000 lignes ; 40 colonnes ; XLSX décompressé
+30 Mo et 500 entrées ZIP. Édition dans l’écran : au plus 1 500 lignes.
+Cellule : 200 octets UTF-8, ou 1 000 pour note. Carnet normalisé limité
+à environ 10 Mo JSON pour garantir une sauvegarde restaurable sous 12 Mo.
+Les colonnes inconnues sont signalées et ignorées.
+
+Le journal indique chaque ligne conservée ou exclue et ses motifs.
+Causes d’exclusion : zone/référence numérique manquante ; valeur numérique
+invalide, infinie ou non positive pour une masse volumique ; rho_d et rho_h
+simultanés ; couple humide/eau incomplet ; date invalide ; calcul impossible.
+L’eau renseignée doit être >=0. Le plafond de 1 000 % est une limite de
+saisie informatique, pas un classement des sols. Masses volumiques limitées
+à 10^6 kg/m³ et coordonnées à +/-10^7 m, également sans valeur normative.
+
+Les lignes complètement dupliquées restent présentes par défaut. L’option
+de dédoublonnage conserve la première. Une répétition peut être un vrai essai :
+vérifier sa provenance. Les identifiants ne garantissent pas l’indépendance.
+Les valeurs >100 % de compactage relatif ne sont pas supprimées : vérifier
+la référence, le protocole ou la mesure. Elles ne prouvent pas une erreur.
+Il n’y a ni imputation, ni suppression automatique des valeurs extrêmes.
+
+Une source modifiée ou enrichie devient Données utilisateur. L’exemple fictif
+n’est pas mélangé silencieusement aux données : cliquer son bouton remplace
+le carnet. La saisie unitaire ajoute explicitement un essai au carnet courant.
+
+Le JSON contient brut, provenance déclarée et filtres. Il remplace le carnet
+après confirmation et recalcule les résultats. Il ne sauvegarde pas les textes
+du rapport, les tirages bootstrap ou une estimation probabiliste activée.
+Si une sauvegarde modifiée revendique les dix essais fictifs originaux,
+l’application compare les valeurs et rétrograde l’origine si elles diffèrent.
+
+## 6. Formules et statistiques
+
+    rho_h (kg/m³) = masse humide du sol seul (kg) / volume (m³)
+    volume (m³) = volume (litres) / 1000
+    eau (%) = masse d’eau / masse sèche de sol * 100
+    rho_d = rho_h / (1 + eau_pct/100)
+    CR (%) = 100 * rho_d / rho_ref
+    moyenne = somme(CR) / n
+    variance d’échantillon = somme((CR - moyenne)^2) / (n - 1)
+    écart-type = racine(variance)
+    CV (%) = 100 * écart-type / moyenne
+
+Au moins deux observations pour variance/écart-type. La dispersion de CR
+est en points de pourcentage ; le CV est en %. La moyenne est la moyenne
+des rapports individuels, pas le rapport de deux moyennes.
+Le compactage relatif ne se confond pas avec l’indice de densité des sables.
+
+Sous l’objectif : condition stricte CR < objectif. L’égalité est exclue.
+Les valeurs sont arrondies à 10 décimales de pourcentage pour neutraliser
+les seules poussières informatiques, sans marge de réception technique.
+Une fréquence de 20 % ne signifie ni 20 % de surface déficiente ni 20 % de
+probabilité de défaillance d’un ouvrage.
+
+Wilson à 95 % : estimation d’une proportion de mesures sous l’objectif,
+sous hypothèses de comparabilité/indépendance/représentativité. Cet intervalle
+ne contient pas 95 % des valeurs de compactage. Un petit n donne un intervalle
+large. Une fréquence nulle ne démontre pas une probabilité vraie nulle.
+
+Normale : moyenne et écart-type d’échantillon du sous-ensemble choisi ;
+n>=3 et dispersion non nulle. Calcul P(CR < objectif). Le modèle n’est pas
+prouvé par le simple ajustement ; il est non borné et peut donner une masse
+à des valeurs impossibles. Aucun test automatique ne valide sa pertinence.
+
+Bootstrap : 1 000, 2 000 ou 5 000 rééchantillonnages de n valeurs avec remise ;
+intervalle percentile 2,5–97,5 % des moyennes. Graine reproductible, calcul par
+lots de 32, cache limité. Il ne corrige ni biais de sélection ni dépendance.
+Il concerne la moyenne et non les individus. Aucune simulation artificielle
+de résistance ou de stabilité d’ouvrage n’est ajoutée.
+
+La référence de laboratoire est fixe et exacte dans ces calculs. Son incertitude,
+la méthode d’essai, l’humidité, le type de sol et les effets de lot ne sont pas
+modélisés. Les valeurs de référence doivent être renseignées et documentées.
+
+## 7. Exemples à vérifier
+
+A — Dix essais fictifs, référence 1 900 kg/m³, objectif d’exercice 95 %.
+CR = 92,94,95,95,96,96,97,98,99,100.
+rho_d = 1748,1786,1805,1805,1824,1824,1843,1862,1881,1900 kg/m³.
+Deux essais strictement sous 95 %, soit 2/10 = 20 %.
+Moyenne = 962/10 = 96,2 % ; médiane = 96 %.
+Variance = 5,73333333 points² ; écart-type = 2,394438 points ; CV = 2,489021 %.
+Wilson à 95 % = [5,668215 % ; 50,983753 %].
+Modèle normal ajusté au même sous-ensemble : environ 30,812875 % sous 95 %.
+Ce 30,81 % théorique diffère de la fréquence empirique de 20 %.
+Objectif 96 % : quatre essais strictement sous le seuil, soit 40 %.
+
+B — Zones : A = 92,94,95,95,96 ; B = 96,97,98,99,100.
+Moyenne A = 94,4 %, moyenne B = 98 %, différence B - A = 3,6 points.
+Sous 95 % : A = 2/5 soit 40 %, B = 0/5 soit 0 %.
+Cliquer Voir cette zone sur la carte A : l’effectif devient 5 ; Afficher toutes
+les zones : il redevient 10.
+
+C — Conversion masse/volume, dans Essais et saisie :
+masse sol seul 1,8 kg, volume 1 litre, teneur en eau 10 %, référence 1 800 kg/m³.
+rho_h = 1,8/0,001 = 1 800 ; rho_d = 1 800/1,1 = 1 636,363636 kg/m³.
+CR = 100 * 1 636,363636/1 800 = 90,909091 %.
+Avec zéro d’eau explicite, rho_d = rho_h ; eau absente ne vaut pas zéro.
+
+D — CSV minimal :
+    zone;rho_d;rho_ref
+    A;1800;1900
+    B;1900;1900
+Deux essais analysables ; les modèles restent indisponibles faute de sol,
+couche et identifiant de référence. La fréquence et les graphiques descriptifs
+restent utilisables. Ajouter une ligne rho_ref=0 : elle est exclue et expliquée.
+
+E — Série constante : trois essais à rho_d=rho_ref=1 900.
+CR=100 pour tous ; écart-type=0 ; modèle normal non ajustable.
+Bootstrap de la moyenne : bornes exactement 100 et 100.
+Pour un essai unique, variance et écart-type non calculables.
+
+F — Rapport : étudier le sous-ensemble fictif dans Probabilités, activer les
+hypothèses. Dans Rapports, cocher son inclusion, saisir un nom et personnaliser
+la conclusion. Préparer et télécharger PDF et Excel. Changer le titre : les
+anciens téléchargements disparaissent jusqu’à une nouvelle préparation.
+Exporter JSON, modifier le carnet, puis restaurer : retrouver les valeurs,
+provenance et filtres. Les textes du PDF ne font pas partie de cette sauvegarde.
+
+## 8. Sources méthodologiques
+
+FHWA, Geotechnical Aspects of Pavements, NHI-05-037, chapitre 5,
+équations 5.1 (conversion humide/sèche) et 5.4 (compactage relatif).
+https://www.fhwa.dot.gov/engineering/geotech/pubs/05037/05a.cfm
+
+NIST/SEMATECH e-Handbook of Statistical Methods,
+7.2.4.1 Confidence intervals : intervalle de Wilson pour une proportion.
+https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm
+
+Références consultées le 31 octobre 2026. Elles documentent les méthodes ;
+les exemples ne sont pas des données extraites de ces publications.
+Les dix essais sont entièrement construits, sans origine de chantier réelle.
+Les seuils réglementaires et les procédures complètes de laboratoire restent
+hors du périmètre ; aucun contenu précis du programme de l’ENSPY n’est supposé.
+
+## 9. Exports et conservation
+
+CSV : UTF-8 BOM, point-virgule, virgule décimale, 10 chiffres significatifs.
+Les textes commençant comme des formules sont neutralisés pour le tableur.
+JSON : conserve les chaînes brutes exactes, restauration limitée à 12 Mo.
+Excel : Selection, Zones, Nettoyage, Brut, Contexte ; chaînes enregistrées
+comme textes, sans formules exécutables. Le rapport PDF n’est pas reproduit
+dans le classeur.
+PDF : statistiques et filtres, zones, figures vectorielles, conclusion,
+hypothèses et sources. Les graphiques indiquent leurs limites : au plus
+30 essais, 12 moyennes de zones ; le tableau de zones est limité à 30.
+Les statistiques portent sur toute la sélection et les exports tabulaires
+contiennent les valeurs complètes. Le bootstrap reste dans l’interface.
+Pour une sélection réimportable, rho_d contient la valeur sèche résolue et
+rho_h est vide ; la mesure humide éventuelle est conservée dans rho_h_mesuree,
+colonne de traçabilité ignorée à l’import. Les valeurs d’origine exactes et
+le mode humide/eau sont conservés dans Brut et dans la sauvegarde JSON.
+Les documents préparés sont invalidés si données, filtres, textes ou modèle
+retenu changent.
+
+## 11. Vérifications de livraison
+
+Vérifications effectuées le 31 octobre 2026 :
+
+- 32 tests automatisés réussis : formules, valeurs limites, nettoyage, doublons,
+  groupes comparables, bootstrap reproductible, CSV/XLSX, sauvegarde/restauration,
+  exports et chargement de l’interface.
+- Navigation et mise en page vérifiées dans Microsoft Edge à 1 440, 768, 390
+  et 320 pixels de largeur : cinq rubriques, sans débordement horizontal de page.
+- Parcours complet dans le navigateur : cartes de zones, calcul humide/sec,
+  saisie d’un essai, import avec ligne exclue, hypothèses probabilistes, bootstrap,
+  téléchargement PDF/Excel/CSV/JSON, restauration et changement d’objectif.
+- Vérification de la conservation des options du rapport entre les pages,
+  et du retrait du téléchargement préparé lorsque le titre est modifié.
+- Cinq PDF de contrôle de trois pages chacun, dont un téléchargé dans le
+  navigateur : pages rendues et inspectées visuellement ; caractères dans les
+  limites des pages, sans coupure ni chevauchement constaté.
+- Exemple fictif vérifié : moyenne 96,2 %, écart-type 2,39444 points,
+  20 % sous 95 %, différence B − A de 3,6 points ; conversion 90,9091 %.
+
+Les captures et scripts restent hors du dossier livré. Les formats mobiles
+ont été contrôlés dans un navigateur redimensionné : il reste à vérifier sur
+un téléphone réel, sous connexion lente et après publication sur Community
+Cloud. Aucun dépôt distant ni hébergement public n’a été créé durant ces tests.
